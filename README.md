@@ -1,3 +1,5 @@
+> **Note**: This project is still in early development. Come back later!
+
 Kona
 ====
 

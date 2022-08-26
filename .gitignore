@@ -1,0 +1,11 @@
+# Ignore the desktop services store files on macOS.
+.DS_Store
+
+# Ignore the Cargo (Rust) target directory.
+/target
+
+# Ignore the VS Code configuration directory.
+.vscode
+
+# Ignore the JetBrains specific settings files.
+.idea
