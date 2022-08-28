@@ -59,10 +59,10 @@ impl SourceFile {
     }
 
     /// Creates a virtual testing source file from the given source.
-    pub fn test_file(src: Rc<String>, name: Option<String>, start_pos: Pos) -> SourceFile {
+    pub fn test_file(src: Rc<String>, name: Option<String>, number: u32, start_pos: Pos) -> SourceFile {
         SourceFile::new(SourcePath::Test {
             name,
-            uid: start_pos.to_u32(),
+            uid: number,
          }, src, start_pos)
     }
 
@@ -279,7 +279,7 @@ impl SourceFile {
 }
 
 #[derive(Clone, PartialEq, Eq)]
-enum SourcePath {
+pub(super) enum SourcePath {
     /// The canonical, unique path to an existing local file. The path must be
     /// canonicalized by [`std::fs::canonicalize`].
     Local(PathBuf),

@@ -4,6 +4,7 @@
 mod pos;
 mod span;
 mod source_file;
+mod source_map;
 
 pub use pos::*;
 pub use span::*;
