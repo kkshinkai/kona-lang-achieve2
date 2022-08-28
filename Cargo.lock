@@ -7,5 +7,21 @@ name = "kona"
 version = "0.1.0"
 
 [[package]]
-name = "kona_diagnostic"
+name = "kona-diagnostic"
 version = "0.1.0"
+dependencies = [
+ "unicode-general-category",
+ "unicode-width",
+]
+
+[[package]]
+name = "unicode-general-category"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1218098468b8085b19a2824104c70d976491d247ce194bbd9dc77181150cdfd6"
+
+[[package]]
+name = "unicode-width"
+version = "0.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ed742d4ea2bd1176e236172c8429aaf54486e7ac098db29ffe6529e0ce50973"

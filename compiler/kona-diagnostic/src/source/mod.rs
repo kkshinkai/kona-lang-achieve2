@@ -3,6 +3,8 @@
 
 mod pos;
 mod span;
+mod source_file;
 
 pub use pos::*;
 pub use span::*;
+pub use source_file::*;
