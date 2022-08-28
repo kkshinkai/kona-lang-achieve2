@@ -15,9 +15,9 @@ impl Pos {
     #[inline(always)]
     pub fn from_u32(index: u32) -> Pos {
         // NOTE: I didn't use the name `new` because I thought the name
-        //       `from_u32` might make it clearer to the user that this is an
-        //       unverified forced conversion. I didn't implement the
-        //       `From<u32>` trait for the same reason.
+        // `from_u32` might make it clearer to the user that this is an
+        // unverified forced conversion. I didn't implement the `From<u32>`
+        // trait for the same reason.
         Pos { index }
     }
 
@@ -52,13 +52,13 @@ impl fmt::Debug for Pos {
 }
 
 // NOTE: Never implement `Add` and `Sub` for `Pos`. Adding two `Pos` together
-//       is meaningless, just like adding two raw pointers. Implement `Add<u32>`
-//       and `Sub<u32>` instead, here `u32` is considered as offset.
+// is meaningless, just like adding two raw pointers. Implement `Add<u32>` and
+// `Sub<u32>` instead, here `u32` is considered as offset.
 //
-//           add, sub: Fn(Pos, usize) -> Pos   // ✓
-//           add, sub: Fn(Pos, Pos) -> Pos     // ✗
+//     add, sub: Fn(Pos, usize) -> Pos   // ✓
+//     add, sub: Fn(Pos, Pos) -> Pos     // ✗
 //
-//       For convenience, `Add<usize>` and `Sub<usize>` are also implemented.
+// For convenience, `Add<usize>` and `Sub<usize>` are also implemented.
 
 impl Add<usize> for Pos {
     type Output = Pos;
