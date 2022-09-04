@@ -19,10 +19,21 @@ impl fmt::Debug for Span {
 
 impl Span {
     pub fn new(start: Pos, end: Pos) -> Span {
-        debug_assert_ne!((start.to_u32(), end.to_u32()), (0, 0),
+        debug_assert!(start.to_u32() != 0 && end.to_u32() != 0,
             "position `Pos::from_u32(0)' is reserved for dummy span");
 
         Span { start, end }
+    }
+
+    pub fn dummy() -> Span {
+        Span {
+            start: Pos::from_u32(0),
+            end: Pos::from_u32(0),
+        }
+    }
+
+    pub fn is_dummy(&self) -> bool {
+        (self.start().to_u32(), self.end().to_u32()) == (0, 0)
     }
 
     pub fn start(&self) -> Pos {

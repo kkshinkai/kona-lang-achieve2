@@ -2,3 +2,4 @@
 // root for license information.
 
 pub mod source;
+pub mod diagnostic;

@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 unicode-width = "0.1.7"
 unicode-general-category = "0.5.1"
+termcolor = "1.1"
