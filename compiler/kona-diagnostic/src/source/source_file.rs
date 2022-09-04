@@ -5,7 +5,7 @@ use std::{path::PathBuf, rc::Rc, ops::Range, io, fs};
 
 use unicode_width::UnicodeWidthChar;
 
-use super::{Span, Pos};
+use super::{Span, Pos, SourcePath};
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct SourceFile {
@@ -55,15 +55,12 @@ impl SourceFile {
 
         let src = fs::read_to_string(&path)?;
 
-        Ok(SourceFile::new(SourcePath::Local(path), Rc::new(src), start_pos))
+        Ok(SourceFile::new(SourcePath::local_file(path), Rc::new(src), start_pos))
     }
 
     /// Creates a virtual testing source file from the given source.
-    pub fn test_file(src: Rc<String>, name: Option<String>, number: u32, start_pos: Pos) -> SourceFile {
-        SourceFile::new(SourcePath::Test {
-            name,
-            uid: number,
-         }, src, start_pos)
+    pub fn test_file(src: Rc<String>, name: Option<String>, uid: u32, start_pos: Pos) -> SourceFile {
+        SourceFile::new(SourcePath::test_file(name, uid), src, start_pos)
     }
 
     /// Creates a new source file from the given path and source code.
@@ -84,45 +81,31 @@ impl SourceFile {
     /// Gets the human-readable file name of the source file for diagnostic
     /// messages. Note his name cannot be used as a path.
     pub fn name(&self) -> String {
-        match self.path {
-            SourcePath::Local(ref path) => {
-                // Rust `std::fs::canonicalize` returns Windows NT UNC paths on
-                // Windows (e.g. `\\?\C:\example.txt`), which are rarely
-                // supported by Windows programs, even Microsoft's own. Just
-                // remove the verbatim prefix.
-                //
-                // This path is already canonicalized, so we don't need to
-                // verify it again.
-                //
-                // TBD: Maybe we should use `std::path::absolute` (unstable)
-                // instead of `std::fs::canonicalize`?
-                #[cfg(windows)]
-                {
-                    use std::path::{Component, Prefix};
-                    if let Some(Component::Prefix(p)) = path.components().next() {
-                        if matches!(p.kind(), Prefix::VerbatimDisk(..)) {
-                            // This string if always longer than 4 on Windows
-                            // because it is canonicalized.
-                            return path.to_string_lossy()[4..].to_string();
-                        }
-                    }
-                }
+        self.path.readable_name()
+    }
 
-                path.to_string_lossy().to_string()
-            },
-            SourcePath::Test { ref name, uid } => match name {
-                Some(name) => name.clone(),
-                None => format!("virtual #{}", uid),
-            },
-        }
+    pub fn src(&self) -> Rc<String> {
+        self.src.clone()
+    }
+
+    pub fn span(&self) -> Span {
+        self.span
+    }
+
+    pub fn start_pos(&self) -> Pos {
+        self.span.start()
+    }
+
+    pub fn end_pos(&self) -> Pos {
+        self.span.end()
     }
 
     pub fn is_local_file(&self) -> bool {
-        matches!(self.path, SourcePath::Local(_))
+        self.path.is_local_file()
     }
 
     pub fn is_test_file(&self) -> bool {
-        matches!(&self.path, SourcePath::Test { .. })
+        self.path.is_test_file()
     }
 
     /// Finds the line containing the given position.
@@ -276,22 +259,6 @@ impl SourceFile {
 
         (lines, multi_byte_chars, non_narrow_chars)
     }
-}
-
-#[derive(Clone, PartialEq, Eq)]
-pub(super) enum SourcePath {
-    /// The canonical, unique path to an existing local file. The path must be
-    /// canonicalized by [`std::fs::canonicalize`].
-    Local(PathBuf),
-
-    /// A dummy file with given name, mostly for testing.
-    Test {
-        /// An optional name for the testing source snippet.
-        name: Option<String>,
-
-        /// An unique number to distinguish the testing snippet from others.
-        uid: u32,
-    },
 }
 
 /// Represents a multi-byte UTF-8 unicode scalar in the source code.

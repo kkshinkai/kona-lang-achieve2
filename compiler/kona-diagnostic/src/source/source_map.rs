@@ -1,14 +1,11 @@
 // Copyright (c) Kk Shinkai. All Rights Reserved. See LICENSE.txt in the project
 // root for license information.
 
-// Copyright (c) Kk Shinkai. All Rights Reserved. See LICENSE.txt in the project
-// root for license information.
-
 use std::{rc::Rc, collections::HashMap, path::PathBuf, io, fs, sync::{RwLock, atomic::{AtomicUsize, Ordering, AtomicU32}}};
 
 use crate::source::SourceFile;
 
-use super::{Pos, SourcePath, Span};
+use super::{Pos, SourcePath, Span, PosInfo};
 
 // FIXME: Try load an empty file.
 
@@ -90,7 +87,7 @@ impl SourceMap {
         &self, path: PathBuf,
     ) -> io::Result<Rc<SourceFile>> {
         // Path must be absolute to uniquely identify the source file.
-        let file_path = fs::canonicalize(&path)?;
+        let file_path = SourcePath::local_file(fs::canonicalize(&path)?);
 
         {
             let files = self.source_files.read().unwrap();
@@ -99,9 +96,11 @@ impl SourceMap {
            }
         }
 
+        // FIXME: Just don't read and canonicalize this file twice.
+        let src = fs::read_to_string(&path)?;
         let start_pos = Pos::from_usize(self.allocate_pos_space(src.len()));
         let file = Rc::new(
-            SourceFile::local_file(file_path.clone(), start_pos)?
+            SourceFile::local_file(fs::canonicalize(&path)?, start_pos)?
         );
 
         {
@@ -113,14 +112,12 @@ impl SourceMap {
         Ok(file)
     }
 
-    /// Adds a virtual source file with the given name and source string.
-    pub fn load_virtual_file(
+    /// Adds a test source file with the given name and source string.
+    pub fn load_test_file(
         &self, name: Option<String>, src: String
     ) -> Rc<SourceFile> {
-        let file_path = SourcePath::Test {
-            name,
-            uid: self.allocate_virtual_file_number(),
-        };
+        let uid = self.allocate_virtual_file_number();
+        let file_path = SourcePath::test_file(name.clone(), uid);
 
         {
             let files = self.source_files.read().unwrap();
@@ -131,8 +128,7 @@ impl SourceMap {
 
         let start_pos = Pos::from_usize(self.allocate_pos_space(src.len()));
         let file = Rc::new(
-            SourceFile::
-            new(file_path.clone(), Rc::new(src), start_pos)
+            SourceFile::test_file(Rc::new(src), name, uid, start_pos)
         );
 
         {
@@ -147,14 +143,14 @@ impl SourceMap {
     /// Creates a single-file source map, mostly for testing.
     pub fn from_file(path: PathBuf) -> io::Result<Self> {
         let source_map = SourceMap::new();
-        source_map.load_file(path)?;
+        source_map.load_local_file(path)?;
         Ok(source_map)
     }
 
     /// Creates a source map from the given source string, mostly for testing.
     pub fn from_string(src: impl Into<String>) -> Self {
         let source_map = SourceMap::new();
-        source_map.load_virtual_file("<string>".to_string(), src.into());
+        source_map.load_test_file(Some("<string>".to_string()), src.into());
         source_map
     }
 
@@ -168,19 +164,19 @@ impl SourceMap {
     pub fn lookup_file(&self, pos: Pos) -> Rc<SourceFile> {
         let files = self.source_files.read().unwrap();
         let idx = files.files
-            .binary_search_by_key(&pos, |file| file.start_pos)
+            .binary_search_by_key(&pos, |file| file.start_pos())
             .unwrap_or_else(|p| p - 1);
         files.files[idx].clone()
     }
 
     /// Returns the source file at the given interval.
     pub fn lookup_source(&self, span: Span) -> String {
-        let file = self.lookup_file(span.start);
+        let file = self.lookup_file(span.start());
 
-        let start = span.start.to_usize() - file.start_pos.to_usize();
-        let end = span.end.to_usize() - file.start_pos.to_usize();
+        let start = span.start().to_usize() - file.start_pos().to_usize();
+        let end = span.end().to_usize() - file.start_pos().to_usize();
 
-        file.src[start..end].to_string()
+        file.src()[start..end].to_string()
     }
 }
 
