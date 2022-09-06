@@ -7,7 +7,7 @@ use crate::source::Span;
 
 use crate::{diagnostic::Diagnostic};
 
-use super::DiagnosticEngine;
+use super::{DiagnosticEngine, DiagnosticLabel};
 
 pub struct DiagnosticBuilder<'a, G: EmissionGuarantee> {
     state: DiagnosticBuilderState<'a>,
@@ -27,8 +27,35 @@ impl<'a, G: EmissionGuarantee> DiagnosticBuilder<'a, G> {
         }
     }
 
-    pub fn set_span(mut self, span: impl Into<Span>) -> DiagnosticBuilder<'a, G> {
-        self.diagnostic.span = span.into();
+    pub fn set_primary_label(mut self, span: impl Into<Span>, msg: impl Into<String>) -> DiagnosticBuilder<'a, G> {
+        let label = &mut self.diagnostic.labels.primary_label;
+        label.span = span.into();
+        label.message = msg.into();
+        self
+    }
+
+    /// Set primary label without message.
+    pub fn set_primary_span(mut self, span: impl Into<Span>) -> DiagnosticBuilder<'a, G> {
+        debug_assert!(self.diagnostic.labels.primary_label.span.is_dummy());
+
+        self.diagnostic.labels.primary_label.span = span.into();
+        self
+    }
+
+    pub fn add_sublabel(mut self, span: impl Into<Span>, msg: impl Into<String>) -> DiagnosticBuilder<'a, G> {
+        self.diagnostic.labels.sublabels.push(DiagnosticLabel {
+            span: span.into(),
+            message: msg.into(),
+        });
+        self
+    }
+
+    /// Set sublabel without message.
+    pub fn add_subspan(mut self, span: impl Into<Span>) -> DiagnosticBuilder<'a, G> {
+        self.diagnostic.labels.sublabels.push(DiagnosticLabel {
+            span: span.into(),
+            message: String::new(),
+        });
         self
     }
 

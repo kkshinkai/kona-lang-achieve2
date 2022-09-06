@@ -12,7 +12,16 @@ use crate::diagnostic::{Diagnostic, Level};
 // TODO: Two emitters should be able to be composable into another emitter.
 
 pub trait Emitter {
+    /// Emit a diagnostic.
     fn emit_diagnostic(&mut self, diag: &Diagnostic);
+
+    // TBD: Why we put `SourceMap` in `Emitter`, not `DiagnosticEngine`?
+
+    /// Returns the `SourceMap` associated with this emitter if any.
+    ///
+    /// Not all emitters need a source map, for example, a JSON emitter can
+    /// just report the position index in the span, it doesn't need to know
+    /// the actual source code there.
     fn source_map(&self) -> Option<&Rc<SourceMap>>;
 }
 
@@ -68,10 +77,10 @@ impl Emitter for TtyEmitter {
 
         // Prints the source location if available.
         if let Some(source_map) = self.source_map() {
-            if diag.span.is_dummy() || diag.level == Level::Note {
+            if diag.span().is_dummy() || diag.level == Level::Note {
                 return;
             }
-            let info = source_map.lookup_pos_info(diag.span.start());
+            let info = source_map.lookup_pos_info(diag.span().start());
             writeln!(self.out, "    File {file}:{line}:{col}",
                 file = info.file.name(),
                 line = info.line, col = info.col,

@@ -121,3 +121,9 @@ impl From<(usize, usize)> for Span {
         )
     }
 }
+
+impl Default for Span {
+    fn default() -> Self {
+        Span::dummy()
+    }
+}

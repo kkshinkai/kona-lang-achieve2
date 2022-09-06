@@ -125,3 +125,8 @@ impl SubAssign<u32> for Pos {
     }
 }
 
+impl Default for Pos {
+    fn default() -> Pos {
+        Pos { index: 0 }
+    }
+}

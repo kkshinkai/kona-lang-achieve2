@@ -5,9 +5,15 @@ use crate::source::Span;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Diagnostic {
-    pub(crate) level: Level,
-    pub span: Span,
+    pub level: Level,
     pub message: String,
+    pub labels: DiagnosticLabels,
+}
+
+impl Diagnostic {
+    pub fn span(&self) -> Span {
+        self.labels.primary_label.span
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -28,8 +34,14 @@ pub enum Level {
     Note,
 }
 
-impl Diagnostic {
-    pub fn new(level: Level, span: Span, message: String) -> Diagnostic {
-        Diagnostic { level, span, message: message.into() }
-    }
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct DiagnosticLabels {
+    pub primary_label: DiagnosticLabel,
+    pub sublabels: Vec<DiagnosticLabel>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct DiagnosticLabel {
+    pub span: Span,
+    pub message: String,
 }
