@@ -172,7 +172,7 @@ impl SourceMap {
     pub fn lookup_line_bounds(&self, pos: Pos) -> Span {
         let sf = self.lookup_file(pos);
         if let Some(line) = sf.lookup_line(pos) {
-            sf.lookup_line_bounds(line).into()
+            sf.lookup_line_span(line).into()
         } else {
             Span::dummy()
         }

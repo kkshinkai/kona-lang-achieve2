@@ -1,13 +1,13 @@
 // Copyright (c) Kk Shinkai. All Rights Reserved. See LICENSE.txt in the project
 // root for license information.
 
-use std::{path::PathBuf, rc::Rc, ops::Range, io, fs};
+use std::{path::PathBuf, rc::Rc, io, fs};
 
 use unicode_width::UnicodeWidthChar;
 
-use super::{Span, Pos, SourcePath};
+use super::{Span, Pos, SourcePath, SourceLine};
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SourceFile {
     path: SourcePath,
 
@@ -108,11 +108,35 @@ impl SourceFile {
         self.path.is_test_file()
     }
 
+    /// Checks if the source file contains the given position.
+    pub fn contains_pos(&self, pos: Pos) -> bool {
+        self.span.contains(pos)
+    }
+
+    /// Checks if the source file contains the given 1-based line number.
+    pub fn contains_line(&self, line: u32) -> bool {
+        (0..self.lines.len()).contains(&(line as usize - 1))
+    }
+
+    /// Finds the line containing the given position.
+    pub fn lookup_line_at_pos(&self, pos: Pos) -> Option<SourceLine> {
+        let line = match self.lines.binary_search(&pos) {
+            Ok(index) => index,
+            Err(0) => return None,
+            Err(index) => index - 1,
+        };
+
+        // TBD: We can't return `Rc<Self>`, maybe we should move these functions
+        // into `SourceMap`.
+        todo!()
+    }
+
     /// Finds the line containing the given position.
     ///
     /// The return value is the index into the `lines` array of this
     /// `SourceFile`, not the 1-based line number. If the source file is empty
     /// or the position is located before the first line, `None` is returned.
+    #[deprecated]
     pub fn lookup_line(&self, pos: Pos) -> Option<usize> {
         match self.lines.binary_search(&pos) {
             Ok(index) => Some(index),
@@ -121,15 +145,15 @@ impl SourceFile {
         }
     }
 
-    pub fn lookup_line_bounds(&self, line_index: usize) -> Range<Pos> {
+    pub fn lookup_line_span(&self, line_index: usize) -> Span {
         assert!(line_index < self.lines.len());
 
         if self.is_empty() {
-            self.span.start()..self.span.end()
+            Span::new(self.span.start(), self.span.end())
         } else if line_index == (self.lines.len() - 1) {
-            self.lines[line_index]..self.span.end()
+            Span::new(self.lines[line_index], self.span.end())
         } else {
-            self.lines[line_index]..self.lines[line_index + 1]
+            Span::new(self.lines[line_index], self.lines[line_index + 1])
         }
     }
 
