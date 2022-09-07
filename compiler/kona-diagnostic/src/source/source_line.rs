@@ -13,8 +13,6 @@ pub struct SourceLine {
 
 impl SourceLine {
     pub fn new(file: Rc<SourceFile>, line: u32) -> Self {
-        debug_assert!(file.contains_line(line));
-
         SourceLine { file, line }
     }
 
