@@ -107,37 +107,31 @@ impl SourceFile {
     pub fn is_test_file(&self) -> bool {
         self.path.is_test_file()
     }
+}
 
-    /// Checks if the source file contains the given position.
-    pub fn contains_pos(&self, pos: Pos) -> bool {
-        self.span.contains(pos)
-    }
+// NOTE: Both `SourceFile` and `SourceMap` have a series of methods called
+// `lookup_*`. These methods are used to get source code information (e.g.
+// source text string, file name, line number, column number, etc.) at the
+// given position. However, only `SourceMap` exposes these methods to the
+// outside world, while `SourceFile` keeps them private. Here is the reason:
+//
+// - Finding the specified `SourceFile` from the `SourceMap` is not an
+//     expensive operation. It is just a binary search or hash map lookup.
+//     The overhead is negligible even if we repeat it in every `lookup_*`;
+// - `SourceFile`s are always shared by copying out `Rc<SourceFile>` pointers
+//     stored in `SourceMap`. `SourceMap` holds these pointers, `lookup_*` in
+//     `SourceFile` are not able to take them. `self` (or `&self`, `&mut self`)
+//     can't be of any help in this case. If our search result needs to contain
+//     an `Rc<SourceFile>`, only `SourceMap::lookup_*` can do the job.
+//
 
-    /// Checks if the source file contains the given 1-based line number.
-    pub fn contains_line(&self, line: u32) -> bool {
-        (0..self.lines.len()).contains(&(line as usize - 1))
-    }
-
-    /// Finds the line containing the given position.
-    pub fn lookup_line_at_pos(&self, pos: Pos) -> Option<SourceLine> {
-        let line = match self.lines.binary_search(&pos) {
-            Ok(index) => index,
-            Err(0) => return None,
-            Err(index) => index - 1,
-        };
-
-        // TBD: We can't return `Rc<Self>`, maybe we should move these functions
-        // into `SourceMap`.
-        todo!()
-    }
-
+impl SourceFile {
     /// Finds the line containing the given position.
     ///
     /// The return value is the index into the `lines` array of this
     /// `SourceFile`, not the 1-based line number. If the source file is empty
     /// or the position is located before the first line, `None` is returned.
-    #[deprecated]
-    pub fn lookup_line(&self, pos: Pos) -> Option<usize> {
+    pub(crate) fn lookup_line(&self, pos: Pos) -> Option<usize> {
         match self.lines.binary_search(&pos) {
             Ok(index) => Some(index),
             Err(0) => None,
@@ -145,7 +139,7 @@ impl SourceFile {
         }
     }
 
-    pub fn lookup_line_span(&self, line_index: usize) -> Span {
+    pub(crate) fn lookup_line_span(&self, line_index: usize) -> Span {
         assert!(line_index < self.lines.len());
 
         if self.is_empty() {
@@ -160,7 +154,7 @@ impl SourceFile {
 
     /// Looks up the file's 1-based line number and 0-based column offset, for a
     /// given [`Pos`].
-    pub fn lookup_line_and_col(&self, pos: Pos) -> (usize, usize) {
+    pub(crate) fn lookup_line_and_col(&self, pos: Pos) -> (usize, usize) {
         if let Some(line) = self.lookup_line(pos) {
             let line_start = self.lines[line];
             let col = {
@@ -182,7 +176,7 @@ impl SourceFile {
         }
     }
 
-    pub fn lookup_line_col_and_col_display(
+    pub(crate) fn lookup_line_col_and_col_display(
         &self, pos: Pos
     ) -> (usize, usize, usize) {
         let (line, col) = self.lookup_line_and_col(pos);
@@ -214,7 +208,9 @@ impl SourceFile {
     pub fn is_empty(&self) -> bool {
         self.span.start() == self.span.end()
     }
+}
 
+impl SourceFile {
     /// Finds all newlines, multi-byte characters, and non-narrow characters in a
     /// source file.
     fn analyze(
