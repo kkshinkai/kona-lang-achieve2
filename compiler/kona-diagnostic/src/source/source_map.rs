@@ -153,7 +153,32 @@ impl SourceMap {
         source_map.load_test_file(Some("<string>".to_string()), src.into());
         source_map
     }
+}
 
+type LookupResult<T> = Result<T, LookupError>;
+
+enum LookupError {
+    /// Tried to get source information from a non-existent position.
+    DummyPos,
+
+    /// Tried to get source information from a non-existent span.
+    DummySpan,
+
+    // TODO: We need clearer documentation to distinguish between
+    // `PosOutOfRange`, `SpanOutOfRange` and `SpanAcrossFiles`.
+
+    /// Cannot find the source file that contains the given position.
+    PosOutOfRange,
+
+    /// Cannot find the source file that covers the given span.
+    SpanOutOfRange,
+
+    /// The start and end positions are in different source files. In most cases
+    /// this is meaningless.
+    SpanAcrossFiles,
+}
+
+impl SourceMap {
     pub fn lookup_pos_info(&self, pos: Pos) -> PosInfo {
         let sf = self.lookup_file(pos);
         let (line, col, col_display) = sf.lookup_line_col_and_col_display(pos);
