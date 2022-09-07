@@ -169,6 +169,24 @@ impl SourceMap {
         files.files[idx].clone()
     }
 
+    pub fn lookup_line_bounds(&self, pos: Pos) -> Span {
+        let sf = self.lookup_file(pos);
+        if let Some(line) = sf.lookup_line(pos) {
+            sf.lookup_line_bounds(line).into()
+        } else {
+            Span::dummy()
+        }
+    }
+
+    pub fn lookup_line_source(&self, pos: Pos) -> String {
+        let span = self.lookup_line_bounds(pos);
+        if span.is_dummy() {
+            "".to_string()
+        } else {
+            self.lookup_source(span)
+        }
+    }
+
     /// Returns the source file at the given interval.
     pub fn lookup_source(&self, span: Span) -> String {
         let file = self.lookup_file(span.start());
