@@ -43,6 +43,14 @@ impl Pos {
     pub fn to_usize(self) -> usize {
         self.index as usize
     }
+
+    pub fn dummy() -> Pos {
+        Pos { index: 0 }
+    }
+
+    pub fn is_dummy(self) -> bool {
+        self.index == 0
+    }
 }
 
 impl fmt::Debug for Pos {

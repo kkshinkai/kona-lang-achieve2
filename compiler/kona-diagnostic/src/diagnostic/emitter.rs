@@ -100,8 +100,8 @@ impl TtyEmitter {
                             number = line,
                             indent = indent)
                     })?;
-                    let line_source = source_map.lookup_line_source(pos);
-                    write!(self.out, "{}", line_source)?;
+                    // let line_source = source_map.lookup_line_source(pos);
+                    // write!(self.out, "{}", line_source)?;
 
                     self.with_color(Color::Cyan, true, |out| {
                         writeln!(out, "{:indent$} |", "", indent = indent)

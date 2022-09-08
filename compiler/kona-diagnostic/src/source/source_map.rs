@@ -5,7 +5,7 @@ use std::{rc::Rc, collections::HashMap, path::PathBuf, io, fs, sync::{RwLock, at
 
 use crate::source::SourceFile;
 
-use super::{Pos, SourcePath, Span, PosInfo};
+use super::{Pos, SourcePath, Span, PosInfo, SourceLine};
 
 // FIXME: Try load an empty file.
 
@@ -155,11 +155,13 @@ impl SourceMap {
     }
 }
 
-type LookupResult<T> = Result<T, LookupError>;
+pub type LookupResult<T> = Result<T, LookupError>;
 
-enum LookupError {
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LookupError {
     /// Tried to get source information from a non-existent position.
-    DummyPos,
+    DummyPosOrSpan,
 
     /// Tried to get source information from a non-existent span.
     DummySpan,
@@ -167,18 +169,36 @@ enum LookupError {
     // TODO: We need clearer documentation to distinguish between
     // `PosOutOfRange`, `SpanOutOfRange` and `SpanAcrossFiles`.
 
-    /// Cannot find the source file that contains the given position.
-    PosOutOfRange,
+    /// Cannot find the source file that covers the given position or span.
+    OutOfRange,
 
-    /// Cannot find the source file that covers the given span.
-    SpanOutOfRange,
-
-    /// The start and end positions are in different source files. In most cases
-    /// this is meaningless.
+    /// Both start and end positions of the span are legal, but exist in
+    /// different source files. In most cases this is meaningless.
     SpanAcrossFiles,
 }
 
 impl SourceMap {
+    pub fn verify_pos(&self, pos: Pos) -> LookupResult<()> {
+        if pos.is_dummy() {
+            return Err(LookupError::DummyPosOrSpan);
+        }
+
+        todo!();
+
+        Ok(())
+    }
+
+    pub fn verify_span(&self, span: Span) -> LookupResult<()> {
+        if span.is_dummy() {
+            return Err(LookupError::DummySpan);
+        }
+
+        todo!();
+
+        Ok(())
+    }
+
+    #[deprecated]
     pub fn lookup_pos_info(&self, pos: Pos) -> PosInfo {
         let sf = self.lookup_file(pos);
         let (line, col, col_display) = sf.lookup_line_col_and_col_display(pos);
@@ -186,6 +206,7 @@ impl SourceMap {
     }
 
     /// Finds the source file containing the given position.
+    #[deprecated]
     pub fn lookup_file(&self, pos: Pos) -> Rc<SourceFile> {
         let files = self.source_files.read().unwrap();
         let idx = files.files
@@ -194,6 +215,82 @@ impl SourceMap {
         files.files[idx].clone()
     }
 
+    /// Finds the source file containing the given position.
+    pub fn lookup_file_at_pos(&self, pos: Pos) -> LookupResult<Rc<SourceFile>> {
+        if pos.is_dummy() {
+            return Err(LookupError::DummyPosOrSpan);
+        }
+
+        let files = self.source_files.read().unwrap();
+        let search_result = files.files
+            .binary_search_by_key(&pos, |file| file.start_pos());
+
+        match search_result {
+            Ok(idx) => {
+                let file = &files.files[idx];
+                if file.is_empty() {
+                    Err(LookupError::OutOfRange)
+                } else {
+                    Ok(file.clone())
+                }
+            },
+            Err(res) => {
+                // The start position of the first file must be 1. We've checked
+                // that pos is not dummy (aka. >= 1), so the search result must
+                // be greater than 0.
+                debug_assert!(res > 0 && res <= files.files.len());
+                let idx = res - 1;
+
+                // The position must be in the range of the file.
+                let file = &files.files[idx];
+                if file.contains_pos(pos) {
+                    Ok(file.clone())
+                } else {
+                    Err(LookupError::OutOfRange)
+                }
+            },
+        }
+    }
+
+    /// Finds the source file containing the given span.
+    pub fn lookup_file_at_span(&self, span: Span) -> LookupResult<Rc<SourceFile>> {
+        let start_file = self.lookup_file_at_pos(span.start())?;
+        let end_file = self.lookup_file_at_pos(span.end() - 1u32)?;
+
+        // FIXME: For now we use the span to check the equality of two files.
+        // This is really a hacky way. Maybe we should implement file ID later.
+        if start_file.span() == end_file.span() {
+            Ok(start_file)
+        } else {
+            Err(LookupError::SpanAcrossFiles)
+        }
+    }
+
+    pub fn lookup_line_at_pos(&self, pos: Pos) -> LookupResult<SourceLine> {
+        let file = self.lookup_file_at_pos(pos)?;
+        let line = (file.lookup_line(pos).unwrap() + 1) as u32;
+        Ok(SourceLine::new(file, line))
+    }
+
+    pub fn lookup_lines_at_span(&self, span: Span) -> LookupResult<Vec<SourceLine>> {
+        let start_file = self.lookup_file_at_pos(span.start())?;
+        let end_file = self.lookup_file_at_pos(span.end() - 1u32)?;
+
+        // FIXME: For now we use the span to check the equality of two files.
+        // This is really a hacky way. Maybe we should implement file ID later.
+        if start_file.span() == end_file.span() {
+            let start_line = start_file.lookup_line(span.start()).unwrap();
+            let end_line = end_file.lookup_line(span.end() - 1u32).unwrap();
+
+            Ok((start_line..=end_line)
+                .map(|line| SourceLine::new(start_file.clone(), (line + 1) as u32))
+                .collect())
+        } else {
+            Err(LookupError::SpanAcrossFiles)
+        }
+    }
+
+    #[deprecated]
     pub fn lookup_line_bounds(&self, pos: Pos) -> Span {
         let sf = self.lookup_file(pos);
         if let Some(line) = sf.lookup_line(pos) {
@@ -203,23 +300,19 @@ impl SourceMap {
         }
     }
 
-    pub fn lookup_line_source(&self, pos: Pos) -> String {
-        let span = self.lookup_line_bounds(pos);
-        if span.is_dummy() {
-            "".to_string()
-        } else {
-            self.lookup_source(span)
-        }
-    }
 
-    /// Returns the source file at the given interval.
-    pub fn lookup_source(&self, span: Span) -> String {
-        let file = self.lookup_file(span.start());
+    /// Returns the source file at the given span.
+    pub fn lookup_source(&self, span: Span) -> LookupResult<String> {
+        // TBD: We should return `&str` instead of creating a new `String`,
+        // because the source file is immutable. We haven't figured out how to
+        // struggle with ownership, but we should fix it if possible.
+
+        let file = self.lookup_file_at_span(span)?;
 
         let start = span.start().to_usize() - file.start_pos().to_usize();
         let end = span.end().to_usize() - file.start_pos().to_usize();
 
-        file.src()[start..end].to_string()
+        Ok(file.src()[start..end].to_string())
     }
 }
 

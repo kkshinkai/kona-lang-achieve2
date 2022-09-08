@@ -68,8 +68,8 @@ impl Span {
         self.start <= other.start && self.end >= other.end
     }
 
-    pub fn contains(&self, other: Pos) -> bool {
-        self.start <= other && other <= self.end
+    pub fn contains(&self, pos: Pos) -> bool {
+        (self.start..self.end).contains(&pos)
     }
 }
 

@@ -200,8 +200,8 @@ impl SourceFile {
     }
 
     #[inline]
-    pub fn contains(&self, pos: Pos) -> bool {
-        pos >= self.span.start() && pos <= self.span.end()
+    pub fn contains_pos(&self, pos: Pos) -> bool {
+       self.span.contains(pos)
     }
 
     #[inline]
