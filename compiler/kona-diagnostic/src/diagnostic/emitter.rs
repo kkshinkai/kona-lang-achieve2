@@ -73,20 +73,20 @@ impl TtyEmitter {
                 //
                 // TBD: Should we panic here? How should we handle a span that
                 // crosses multiple files?
-                if start_pos_info.file != end_pos_info.file {
+                if start_pos_info.name() != end_pos_info.name() {
                     return Ok(());
                 }
 
-                let indent = end_pos_info.line.to_string().len();
+                let indent = end_pos_info.line().to_string().len();
 
                 // Prints "  --> src/main.sml:1:1"
                 self.with_color(Color::Cyan, true, |out| {
                     write!(out, "{:indent$}--> ", "", indent = indent)
                 })?;
                 writeln!(self.out, "{file_name}:{line}:{col}",
-                    file_name = start_pos_info.file.name(),
-                    line = start_pos_info.line,
-                    col = start_pos_info.col,
+                    file_name = start_pos_info.name(),
+                    line = start_pos_info.line(),
+                    col = start_pos_info.col(),
                 )?;
                 self.with_color(Color::Cyan, true, |out| {
                     writeln!(out, "{:indent$} |", "", indent = indent)
@@ -94,7 +94,7 @@ impl TtyEmitter {
 
                 // This position is used to find current line source code.
                 let mut pos = diag.span().start();
-                for line in start_pos_info.line..=end_pos_info.line {
+                for line in start_pos_info.line()..=end_pos_info.line() {
                     self.with_color(Color::Cyan, true, |out| {
                         write!(out, "{number:>indent$} | ",
                             number = line,
@@ -115,8 +115,8 @@ impl TtyEmitter {
 
                     let mut marks = "".to_string();
                     match line {
-                        line if line == start_pos_info.line => {},
-                        line if line == end_pos_info.line => {},
+                        line if line == start_pos_info.line() => {},
+                        line if line == end_pos_info.line() => {},
 
                         _ => {
                             let size =

@@ -13,18 +13,20 @@ use super::SourceFile;
 /// [`SourceMgr`].
 #[derive(Clone, PartialEq, Eq)]
 pub struct PosInfo {
+    // NOTE: We use `Rc<SourceFile>` here to avoid creating a new string,
+    // actually we only need the source file name.
+
     /// Information about the original source.
-    pub file: Rc<SourceFile>, // TBD: we don't need all these information, why
-                              // not just `FilePath`?
+    file: Rc<SourceFile>,
 
     /// The 1-based line number.
-    pub line: usize,
+    line: usize,
 
     /// The 0-based column offset.
-    pub col: usize,
+    col: usize,
 
     /// The 0-based column offset when displayed.
-    pub col_display: usize,
+    col_display: usize,
 }
 
 impl PosInfo {
@@ -32,6 +34,22 @@ impl PosInfo {
     /// offset when displayed.
     pub fn new(file: Rc<SourceFile>, line: usize, col: usize, col_display: usize) -> PosInfo {
         PosInfo { file, line, col, col_display }
+    }
+
+    pub fn name(&self) -> String {
+        self.file.name()
+    }
+
+    pub fn line(&self) -> usize {
+        self.line
+    }
+
+    pub fn col(&self) -> usize {
+        self.col
+    }
+
+    pub fn col_display(&self) -> usize {
+        self.col_display
     }
 }
 
