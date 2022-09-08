@@ -3,7 +3,7 @@
 
 use std::{rc::Rc, fmt};
 
-use super::SourceFile;
+use super::{SourceFile, Span};
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct SourceLine {
@@ -18,6 +18,14 @@ impl SourceLine {
 
     pub fn line_number(&self) -> u32 {
         self.line + 1
+    }
+
+    pub fn source(&self) -> String {
+        self.file.lookup_line_source(self.line as usize)
+    }
+
+    pub fn span(&self) -> Span {
+        self.file.lookup_line_span(self.line as usize)
     }
 }
 

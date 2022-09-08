@@ -131,12 +131,23 @@ impl SourceFile {
     /// The return value is the index into the `lines` array of this
     /// `SourceFile`, not the 1-based line number. If the source file is empty
     /// or the position is located before the first line, `None` is returned.
-    pub(crate) fn lookup_line(&self, pos: Pos) -> Option<usize> {
+    pub(crate) fn lookup_line_at_pos(&self, pos: Pos) -> Option<usize> {
         match self.lines.binary_search(&pos) {
             Ok(index) => Some(index),
             Err(0) => None,
             Err(index) => Some(index - 1),
         }
+    }
+
+    pub(crate) fn lookup_line_source(&self, line: usize) -> String {
+        let span = self.lookup_line_span(line);
+
+        let (start_idx, end_idx) = (
+            span.start().to_usize() - self.start_pos().to_usize(),
+            span.end().to_usize() - self.start_pos().to_usize(),
+        );
+
+        self.src[start_idx..end_idx].to_string()
     }
 
     pub(crate) fn lookup_line_span(&self, line_index: usize) -> Span {
@@ -155,7 +166,7 @@ impl SourceFile {
     /// Looks up the file's 1-based line number and 0-based column offset, for a
     /// given [`Pos`].
     pub(crate) fn lookup_line_and_col(&self, pos: Pos) -> (usize, usize) {
-        if let Some(line) = self.lookup_line(pos) {
+        if let Some(line) = self.lookup_line_at_pos(pos) {
             let line_start = self.lines[line];
             let col = {
                 let linebpos = self.lines[line];

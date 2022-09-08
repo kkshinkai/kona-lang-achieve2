@@ -178,41 +178,18 @@ pub enum LookupError {
 }
 
 impl SourceMap {
-    pub fn verify_pos(&self, pos: Pos) -> LookupResult<()> {
-        if pos.is_dummy() {
-            return Err(LookupError::DummyPosOrSpan);
-        }
-
-        todo!();
-
-        Ok(())
+    pub fn contains_pos(&self, pos: Pos) -> LookupResult<()> {
+        self.lookup_file_at_pos(pos).map(|_| ())
     }
 
-    pub fn verify_span(&self, span: Span) -> LookupResult<()> {
-        if span.is_dummy() {
-            return Err(LookupError::DummySpan);
-        }
-
-        todo!();
-
-        Ok(())
+    pub fn contains_span(&self, span: Span) -> LookupResult<()> {
+        self.lookup_file_at_span(span).map(|_| ())
     }
 
-    #[deprecated]
-    pub fn lookup_pos_info(&self, pos: Pos) -> PosInfo {
-        let sf = self.lookup_file(pos);
-        let (line, col, col_display) = sf.lookup_line_col_and_col_display(pos);
-        PosInfo::new(sf, line, col, col_display)
-    }
-
-    /// Finds the source file containing the given position.
-    #[deprecated]
-    pub fn lookup_file(&self, pos: Pos) -> Rc<SourceFile> {
-        let files = self.source_files.read().unwrap();
-        let idx = files.files
-            .binary_search_by_key(&pos, |file| file.start_pos())
-            .unwrap_or_else(|p| p - 1);
-        files.files[idx].clone()
+    pub fn lookup_pos_info(&self, pos: Pos) -> LookupResult<PosInfo> {
+        let file = self.lookup_file_at_pos(pos)?;
+        let (line, col, col_display) = file.lookup_line_col_and_col_display(pos);
+        Ok(PosInfo::new(file, line, col, col_display))
     }
 
     /// Finds the source file containing the given position.
@@ -268,7 +245,7 @@ impl SourceMap {
 
     pub fn lookup_line_at_pos(&self, pos: Pos) -> LookupResult<SourceLine> {
         let file = self.lookup_file_at_pos(pos)?;
-        let line = (file.lookup_line(pos).unwrap() + 1) as u32;
+        let line = file.lookup_line_at_pos(pos).unwrap() as u32;
         Ok(SourceLine::new(file, line))
     }
 
@@ -279,27 +256,16 @@ impl SourceMap {
         // FIXME: For now we use the span to check the equality of two files.
         // This is really a hacky way. Maybe we should implement file ID later.
         if start_file.span() == end_file.span() {
-            let start_line = start_file.lookup_line(span.start()).unwrap();
-            let end_line = end_file.lookup_line(span.end() - 1u32).unwrap();
+            let start_line = start_file.lookup_line_at_pos(span.start()).unwrap();
+            let end_line = end_file.lookup_line_at_pos(span.end() - 1u32).unwrap();
 
             Ok((start_line..=end_line)
-                .map(|line| SourceLine::new(start_file.clone(), (line + 1) as u32))
+                .map(|line| SourceLine::new(start_file.clone(), line as u32))
                 .collect())
         } else {
             Err(LookupError::SpanAcrossFiles)
         }
     }
-
-    #[deprecated]
-    pub fn lookup_line_bounds(&self, pos: Pos) -> Span {
-        let sf = self.lookup_file(pos);
-        if let Some(line) = sf.lookup_line(pos) {
-            sf.lookup_line_span(line).into()
-        } else {
-            Span::dummy()
-        }
-    }
-
 
     /// Returns the source file at the given span.
     pub fn lookup_source(&self, span: Span) -> LookupResult<String> {

@@ -64,20 +64,18 @@ impl TtyEmitter {
 
         // Prints the source location if available.
         if let Some(source_map) = self.source_map() {
-            if !diag.span().is_dummy() {
-                let (start_pos_info, end_pos_info) =
-                    (source_map.lookup_pos_info(diag.span().start()),
-                     source_map.lookup_pos_info(diag.span().end()));
-
-                // If this span crosses multiple files, just abort.
-                //
-                // TBD: Should we panic here? How should we handle a span that
-                // crosses multiple files?
-                if start_pos_info.name() != end_pos_info.name() {
+            if let Ok(lines) = source_map.lookup_lines_at_span(diag.span()) {
+                if lines.is_empty() {
                     return Ok(());
                 }
 
-                let indent = end_pos_info.line().to_string().len();
+                let indent = lines.last().unwrap().line_number().to_string().len();
+                let start_pos_info = source_map
+                    .lookup_pos_info(diag.span().start())
+                    .unwrap();
+                let end_pos_info = source_map
+                    .lookup_pos_info(diag.span().end())
+                    .unwrap();
 
                 // Prints "  --> src/main.sml:1:1"
                 self.with_color(Color::Cyan, true, |out| {
@@ -92,41 +90,44 @@ impl TtyEmitter {
                     writeln!(out, "{:indent$} |", "", indent = indent)
                 })?;
 
-                // This position is used to find current line source code.
-                let mut pos = diag.span().start();
-                for line in start_pos_info.line()..=end_pos_info.line() {
+                for (idx, line) in lines.iter().enumerate() {
                     self.with_color(Color::Cyan, true, |out| {
                         write!(out, "{number:>indent$} | ",
-                            number = line,
+                            number = line.line_number(),
                             indent = indent)
                     })?;
-                    // let line_source = source_map.lookup_line_source(pos);
-                    // write!(self.out, "{}", line_source)?;
+
+                    let line_source = line.source();
+                    write!(self.out, "{}", line_source)?;
 
                     self.with_color(Color::Cyan, true, |out| {
-                        writeln!(out, "{:indent$} |", "", indent = indent)
+                        write!(out, "{:indent$} | ", "", indent = indent)
                     })?;
 
+                    let span = line.span();
+
+                    let mark_start_col =
+                        if idx == 0 {
+                           start_pos_info.col_display()
+                        } else {
+                            0
+                        };
+                    let mark_end_col =
+                        if idx == lines.len() - 1 {
+                            end_pos_info.col_display()
+                        } else {
+                            source_map
+                                .lookup_pos_info(span.end() - 1u32)
+                                .unwrap()
+                                .col_display()
+                        };
+
+                    let marks_line = " ".repeat(mark_start_col)
+                        + &level_mark_char.to_string().repeat(mark_end_col - mark_start_col)
+                        + " " + &diag.labels.primary_label.message;
                     self.with_color(level_color, true, |out| {
-                        write!(out, "{number:>indent$} | ",
-                            number = line,
-                            indent = indent)
+                        writeln!(out, "{}", marks_line)
                     })?;
-
-                    let mut marks = "".to_string();
-                    match line {
-                        line if line == start_pos_info.line() => {},
-                        line if line == end_pos_info.line() => {},
-
-                        _ => {
-                            let size =
-                                source_map.lookup_line_bounds(pos).end().to_u32() -
-                                source_map.lookup_line_bounds(pos).start().to_u32() + 1;
-                            marks = level_mark_char.to_string().repeat(size as usize);
-                        },
-                    };
-
-                    pos = source_map.lookup_line_bounds(pos).end() + 1u32;
                 }
 
                 self.with_color(Color::Cyan, true, |out| {

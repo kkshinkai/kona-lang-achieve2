@@ -17,7 +17,7 @@ fn main() {
 
     let engine = DiagnosticEngine::with_tty_emitter(source_map);
 
-    engine.create_err("this is an error message")
-        .set_primary_label(5..10u32, "this is a primary label")
+    engine.create_err("unexpected token keyword `in` in case-of expression")
+        .set_primary_label(141..143u32, "expect keyword `of`")
         .emit();
 }
