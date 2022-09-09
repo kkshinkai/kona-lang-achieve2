@@ -283,7 +283,7 @@ impl SourceMap {
 }
 
 #[derive(Default)]
-pub struct SourceMapFiles {
+struct SourceMapFiles {
     /// The source files.
     files: Vec<Rc<SourceFile>>,
 

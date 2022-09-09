@@ -5,7 +5,7 @@
 
 use std::{path::PathBuf, rc::Rc};
 
-use kona_diagnostic::{source::{SourceMap, Span}, diagnostic::DiagnosticEngine};
+use kona_diagnostic::{source::SourceMap, diagnostic::DiagnosticEngine};
 
 fn main() {
     let file = PathBuf::from(env!("CARGO_MANIFEST_DIR"))

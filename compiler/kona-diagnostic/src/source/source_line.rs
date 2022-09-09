@@ -8,6 +8,8 @@ use super::{SourceFile, Span};
 #[derive(Clone, PartialEq, Eq)]
 pub struct SourceLine {
     file: Rc<SourceFile>,
+
+    /// 0-based line number.
     line: u32,
 }
 
@@ -16,6 +18,7 @@ impl SourceLine {
         SourceLine { file, line }
     }
 
+    /// Returns the 1-based line number.
     pub fn line_number(&self) -> u32 {
         self.line + 1
     }

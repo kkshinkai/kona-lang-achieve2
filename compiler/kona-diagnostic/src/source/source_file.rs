@@ -5,7 +5,7 @@ use std::{path::PathBuf, rc::Rc, io, fs};
 
 use unicode_width::UnicodeWidthChar;
 
-use super::{Span, Pos, SourcePath, SourceLine};
+use super::{Span, Pos, SourcePath};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SourceFile {
