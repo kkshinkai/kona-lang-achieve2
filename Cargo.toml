@@ -2,4 +2,5 @@
 
 members = [
     "compiler/kona",
+    "compiler/kona-diagnostic",
 ]
