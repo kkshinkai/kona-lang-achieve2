@@ -1,0 +1,31 @@
+on: [push, pull_request]
+name: Cargo Build
+
+jobs:
+  test:
+    name: Test
+    runs-on: ${{ matrix.config.os }}
+
+    strategy:
+      matrix:
+        config:
+          - os: ubuntu-latest
+          - os: macos-latest
+          - os: windows-latest
+    steps:
+      # Checks out the repository under `$GITHUB_WORKSPACE`, so the workflow can
+      # access it. See https://github.com/actions/checkout.
+      - name: Checkout the workspace
+        uses: actions/checkout@v2
+
+      # Setup Cargo and the Rust toolchain.
+      # See https://github.com/actions-rs/cargo
+      - name: Use stable Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          # Actually, we could use `command` and `args` arguments to specify
+          # a Cargo command here. But for clarity, we do it separately.
+          toolchain: stable
+
+      - name: Run Cargo tests
+        run: cargo test --release
