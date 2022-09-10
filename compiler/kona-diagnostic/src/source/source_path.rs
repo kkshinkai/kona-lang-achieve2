@@ -72,7 +72,7 @@ enum SourcePathKind {
 }
 
 mod path_helper {
-    use std::path::{PathBuf, Path, Component, Prefix};
+    use std::path::{PathBuf, Path, Component};
 
     /// Get relative path from base to the given path.
     pub fn diff_paths<P, B>(path: P, base: B) -> Option<PathBuf>

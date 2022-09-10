@@ -77,9 +77,12 @@ impl TtyEmitter {
                     .lookup_pos_info(diag.span().end())
                     .unwrap();
 
-                // Prints "  --> src/main.sml:1:1"
+                // Prints "  --- src/main.sml:1:1"
                 self.with_color(Color::Cyan, true, |out| {
-                    write!(out, "{:indent$}--> ", "", indent = indent)
+                    // NOTE: VS Code problem matcher (`"^[\\s->=]*(.*?):(\\d*):(\\d*)\\s*$"`)
+                    // may parse `"--> <file>:<n>:<m>"` as a Rustc error. We
+                    // need to avoid this.~
+                    write!(out, "{:indent$} .- ", "", indent = indent)
                 })?;
                 writeln!(self.out, "{file_name}:{line}:{col}",
                     file_name = start_pos_info.name(),
@@ -131,7 +134,7 @@ impl TtyEmitter {
                 }
 
                 self.with_color(Color::Cyan, true, |out| {
-                    writeln!(out, "{:indent$} |", "", indent = indent)
+                    writeln!(out, "{:indent$} '-", "", indent = indent)
                 })?;
             }
         }
