@@ -22,7 +22,7 @@ pub struct PosInfo {
     /// The 1-based line number.
     line: usize,
 
-    /// The 0-based column offset.
+    /// The 1-based column offset.
     col: usize,
 
     /// The 0-based column offset when displayed.

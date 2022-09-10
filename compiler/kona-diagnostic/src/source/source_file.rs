@@ -163,7 +163,7 @@ impl SourceFile {
     }
 
 
-    /// Looks up the file's 1-based line number and 0-based column offset, for a
+    /// Looks up the file's 1-based line number and 1-based column offset, for a
     /// given [`Pos`].
     pub(crate) fn lookup_line_and_col(&self, pos: Pos) -> (usize, usize) {
         if let Some(line) = self.lookup_line_at_pos(pos) {
@@ -181,7 +181,7 @@ impl SourceFile {
                     .sum::<usize>();
                 pos.to_usize() - line_start.to_usize() - extra_byte
             };
-            (line + 1, col)
+            (line + 1, col + 1)
         } else {
             (0, 0)
         }
@@ -205,7 +205,9 @@ impl SourceFile {
                 .map(|x| x.width())
                 .sum::<usize>();
             let count = non_narrow.count();
-            col + width - count
+            // `col` is 1-based, `col_display` is 0-based, minus 1 to make them
+            // consistent.
+            col - 1 + width - count
         };
         (line, col, col_display)
     }
