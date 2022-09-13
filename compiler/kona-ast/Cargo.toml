@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 kona-diagnostic = { path = "../kona-diagnostic" }
+kona-arena = { path = "../kona-arena" }
