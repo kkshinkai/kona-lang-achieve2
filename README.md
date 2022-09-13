@@ -3,7 +3,7 @@
 Kona
 ====
 
-An experimental compiler for Standard ML 97.
+An experimental functional programming language of the ML family.
 
 License
 -------
