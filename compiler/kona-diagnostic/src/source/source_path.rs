@@ -138,6 +138,8 @@ mod path_helper {
 
         #[cfg(windows)]
         {
+            use std::path::Prefix;
+
             if let Some(Component::Prefix(p)) = path.components().next() {
                 // Checks for verbatim disk prefixes (e.g `\\?\C:` or `C:`).
                 if matches!(p.kind(), Prefix::VerbatimDisk(..)) {
