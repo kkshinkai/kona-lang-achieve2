@@ -3,8 +3,22 @@
 version = 3
 
 [[package]]
+name = "bumpalo"
+version = "3.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c1ad822118d20d2c234f427000d5acc36eabe1e29a348c89b63dd60b13f28e5d"
+
+[[package]]
 name = "kona"
 version = "0.1.0"
+
+[[package]]
+name = "kona-arena"
+version = "0.1.0"
+dependencies = [
+ "bumpalo",
+ "lazy_static",
+]
 
 [[package]]
 name = "kona-ast"
@@ -21,6 +35,12 @@ dependencies = [
  "unicode-general-category",
  "unicode-width",
 ]
+
+[[package]]
+name = "lazy_static"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "termcolor"
