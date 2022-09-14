@@ -1,17 +1,17 @@
 // Copyright (c) Kk Shinkai. All Rights Reserved. See LICENSE.txt in the project
 // root for license information.
 
-use crate::token::Token;
+use crate::ast::token::Token;
 
 use super::Expr;
 
-pub struct Tuple {
+pub struct Seq {
     pub l_paren: Token,
-    pub elems: Vec<TupleElem>,
+    pub exprs: Vec<SeqItem>,
     pub r_paren: Token,
 }
 
-pub struct TupleElem {
+pub struct SeqItem {
     pub expr: Box<Expr>,
-    pub comma: Token,
+    pub semi: Token,
 }

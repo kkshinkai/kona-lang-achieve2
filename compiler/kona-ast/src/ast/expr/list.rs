@@ -1,7 +1,7 @@
 // Copyright (c) Kk Shinkai. All Rights Reserved. See LICENSE.txt in the project
 // root for license information.
 
-use crate::token::Token;
+use crate::ast::token::Token;
 
 use super::Expr;
 
@@ -13,5 +13,5 @@ pub struct List {
 
 pub struct ListElem {
     pub expr: Box<Expr>,
-    pub comma: Token,
+    pub comma: Option<Token>,
 }
