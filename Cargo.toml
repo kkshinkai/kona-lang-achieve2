@@ -9,4 +9,5 @@ members = [
     # Utilities:
     "compiler/kona-diagnostic",
     "compiler/kona-arena",
+    "compiler/kona-proc-macros",
 ]
